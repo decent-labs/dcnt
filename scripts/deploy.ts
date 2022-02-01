@@ -1,16 +1,22 @@
+import ethProvider from "eth-provider";
 import { ethers } from "hardhat";
-import { DCNTToken__factory } from "../typechain";
 
 async function main() {
-  const [owner] = await ethers.getSigners();
+  const frame = ethProvider("frame");
 
   const freeMintWhole = 1_000_000_000; // 1 billion
   const freeMintTotal = ethers.utils.parseEther(freeMintWhole.toString());
 
-  const dcnt = await new DCNTToken__factory(owner).deploy(freeMintTotal);
-  await dcnt.deployed();
+  const DCNTToken = await ethers.getContractFactory("DCNTToken");
+  const dcntTx = await DCNTToken.getDeployTransaction(freeMintTotal);
 
-  console.log("DCNT deployed to:", dcnt.address);
+  const deployer: string = (
+    await frame.request({ method: "eth_requestAccounts" })
+  )[0];
+
+  dcntTx.from = deployer;
+
+  await frame.request({ method: "eth_sendTransaction", params: [dcntTx] });
 }
 
 main().catch((error) => {
