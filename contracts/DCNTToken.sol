@@ -4,7 +4,7 @@ pragma solidity ^0.8.11;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 
-contract DCNTToken is ERC20, ERC20Permit, ERC20Votes, Ownable {
+contract DCNTToken is ERC20Votes, Ownable {
     uint256 public constant MINIMUM_MINT_INTERVAL = 365 days;
     uint256 public constant MINT_CAP_BPS = 200; // 2%
     uint256 public nextMint; // Timestamp
@@ -31,29 +31,5 @@ contract DCNTToken is ERC20, ERC20Permit, ERC20Votes, Ownable {
 
         nextMint = block.timestamp + MINIMUM_MINT_INTERVAL;
         _mint(dest, amount);
-    }
-
-    // The functions below are overrides required by Solidity.
-
-    function _afterTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override(ERC20, ERC20Votes) {
-        super._afterTokenTransfer(from, to, amount);
-    }
-
-    function _mint(address to, uint256 amount)
-        internal
-        override(ERC20, ERC20Votes)
-    {
-        super._mint(to, amount);
-    }
-
-    function _burn(address account, uint256 amount)
-        internal
-        override(ERC20, ERC20Votes)
-    {
-        super._burn(account, amount);
     }
 }
