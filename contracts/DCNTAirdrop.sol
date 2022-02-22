@@ -1,26 +1,26 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.11;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "./DCNTToken.sol";
-
-contract DCNTAirdrop is ReentrancyGuard {
+contract DCNTAirdrop {
     bytes32 private immutable merkleRoot;
     uint256 public immutable totalClaimable;
-    address public immutable dcntToken;
-    address payable public immutable returnAddress;
+    IERC20 public immutable dcntToken;
+    address public immutable returnAddress;
     uint64 public immutable endDate;
 
     mapping(address => bool) public claimed;
 
     event AirdropClaimed(address claimant, uint256 amount);
 
+    error AlreadyClaimed();
+    error NotEligible();
+    error AirdropStillActive();
+
     constructor(
-        address _dcntToken,
+        IERC20 _dcntToken,
         bytes32 _merkleRoot,
         uint256 _totalClaimable,
         uint64 _endDate,
@@ -29,7 +29,7 @@ contract DCNTAirdrop is ReentrancyGuard {
         dcntToken = _dcntToken;
         merkleRoot = _merkleRoot;
         totalClaimable = _totalClaimable;
-        returnAddress = payable(_returnAddress);
+        returnAddress = _returnAddress;
         endDate = _endDate;
     }
 
@@ -37,41 +37,33 @@ contract DCNTAirdrop is ReentrancyGuard {
         address _claimant,
         uint256 _amount,
         bytes32[] memory _proof
-    ) public nonReentrant {
-        require(claimed[_claimant] != true, "Already claimed");
-        require(
-            _verify(_claimant, _amount, _proof),
-            "Not eligible for airdrop"
-        );
-
-        // Use require instead?
-        // require(
-        //     DCNTToken(dcntToken).transfer(_claimant, _amount),
-        //     "Failed to transfer tokens"
-        // );
-        // claimed[_claimant] = true;
-        // emit AirdropClaimed(_claimant, _amount);
-
-        if (DCNTToken(dcntToken).transfer(_claimant, _amount)) {
-            claimed[_claimant] = true;
-            emit AirdropClaimed(_claimant, _amount);
+    ) public {
+        if (claimed[_claimant] == true) {
+            revert AlreadyClaimed();
         }
+        if (!verify(_claimant, _amount, _proof)) {
+            revert NotEligible();
+        }
+
+        claimed[_claimant] = true;
+        dcntToken.transfer(_claimant, _amount);
+
+        emit AirdropClaimed(_claimant, _amount);
     }
 
     function endAirdrop() public {
-        require(block.timestamp >= endDate, "Cannot end active airdrop");
+        if (block.timestamp < endDate) {
+            revert AirdropStillActive();
+        }
 
-        DCNTToken(dcntToken).transfer(
-            returnAddress,
-            DCNTToken(dcntToken).balanceOf(address(this))
-        );
+        dcntToken.transfer(returnAddress, dcntToken.balanceOf(address(this)));
     }
 
-    function _verify(
+    function verify(
         address _claimant,
         uint256 _amount,
         bytes32[] memory _proof
-    ) private view returns (bool) {
+    ) public view returns (bool) {
         return
             MerkleProof.verify(
                 _proof,
