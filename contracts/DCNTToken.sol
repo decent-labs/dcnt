@@ -5,9 +5,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
 
 contract DCNTToken is ERC20Votes, Ownable {
-    uint256 public constant MINIMUM_MINT_INTERVAL = 365 days;
-    uint256 public constant MINT_CAP_BPS = 200; // 2%
-    uint256 public nextMint; // Timestamp
+    uint128 public nextMint; // Timestamp
+    uint32 public constant MINIMUM_MINT_INTERVAL = 365 days;
+    uint8 public constant MINT_CAP_BPS = 200; // 2%
 
     error MintExceedsMaximum();
     error MintTooSoon();
@@ -17,7 +17,7 @@ contract DCNTToken is ERC20Votes, Ownable {
         ERC20Permit("Decent")
     {
         _mint(msg.sender, freeSupply);
-        nextMint = block.timestamp + MINIMUM_MINT_INTERVAL;
+        nextMint = uint128(block.timestamp + MINIMUM_MINT_INTERVAL);
     }
 
     function mint(address dest, uint256 amount) external onlyOwner {
@@ -29,7 +29,7 @@ contract DCNTToken is ERC20Votes, Ownable {
             revert MintTooSoon();
         }
 
-        nextMint = block.timestamp + MINIMUM_MINT_INTERVAL;
+        nextMint = uint128(block.timestamp + MINIMUM_MINT_INTERVAL);
         _mint(dest, amount);
     }
 }
