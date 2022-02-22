@@ -41,8 +41,8 @@ describe("DCNTToken", function () {
 
   describe("Minting more tokens", function () {
     let originalTotalSupply: BigNumber,
-      minimumMintInterval: BigNumber,
-      mintCapBPs: BigNumber,
+      minimumMintInterval: number,
+      mintCapBPs: number,
       nextMint: BigNumber;
 
     beforeEach(async function () {
@@ -121,7 +121,7 @@ describe("DCNTToken", function () {
       });
 
       it("Should allow the owner to mint after the minimum mint interval", async function () {
-        await time.increase(minimumMintInterval.toNumber());
+        await time.increase(minimumMintInterval);
         const toMint = 1;
         await dcnt.mint(owner.address, toMint);
         expect(await dcnt.totalSupply()).to.eq(originalTotalSupply.add(toMint));
