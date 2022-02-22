@@ -1,12 +1,12 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
-import { AbiCoder } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import { MerkleTree } from "merkletreejs";
 
 import { DCNTToken, DCNTAirdrop } from "../typechain";
 import time from "./time";
+import { makeLeaf, makeLeaves, constructMerkeTree } from "../scripts/airdrop_helpers";
 
 
 // Test airdrop deployment.
@@ -23,14 +23,14 @@ describe("DCNTAirdrop", function () {
   let dcnt: DCNTToken;
   let dnctAirdrop: DCNTAirdrop;
 
-  const freeMintWhole = 1_000_000_000;
-  const totalClaimable = 10_000;
+  const freeMintWhole = BigNumber.from(1_000_000_000);
+  const totalClaimable: BigNumber = BigNumber.from(10_000);
 
   let tree: MerkleTree;
   let leaves: (string | Buffer)[];
   let airdropClaimants: {
-    addr: String;
-    claim: number;
+    addr: string;
+    claim: BigNumber;
   }[];
 
 
@@ -38,8 +38,8 @@ describe("DCNTAirdrop", function () {
     [deployer, recoveryDest, claimant1, claimant2, claimantN] = await ethers.getSigners();
 
     airdropClaimants = [
-      { addr: claimant1.address, claim: 1000 },
-      { addr: claimant2.address, claim: 9000 },
+      { addr: claimant1.address, claim: BigNumber.from(1000) },
+      { addr: claimant2.address, claim: BigNumber.from(9000) },
     ];
 
     // DCNT Token should be deployed first
@@ -52,16 +52,11 @@ describe("DCNTAirdrop", function () {
     await dcnt.deployed();
 
     // Prepare merkle tree of claimants
-    leaves = airdropClaimants.map(x => Buffer.from(
-      ethers.utils.solidityKeccak256(['address', 'uint256'], [x.addr, x.claim]).replace(/^0x/, ""),
-      "hex"
-    ));
-
-    tree = new MerkleTree(leaves, ethers.utils.keccak256, { sort: true })
+    leaves = makeLeaves(airdropClaimants);
+    tree = constructMerkeTree(leaves);
 
     // Deploy airdrop contract
     let DCNTAirdrop = await ethers.getContractFactory("DCNTAirdrop");
-    let _now = new Date();
     dnctAirdrop = await DCNTAirdrop.deploy(
       dcnt.address,
       tree.getHexRoot(),
@@ -83,9 +78,6 @@ describe("DCNTAirdrop", function () {
   });
 
   describe("Airdrop claims", function () {
-    beforeEach(async function () {
-    });
-
     describe("Given valid proof", function () {
       it("Should transfer claimant's DCNT claim from airdrop to them", async function () {
         let _leaf1 = leaves[0];
@@ -97,7 +89,7 @@ describe("DCNTAirdrop", function () {
         let airdropBalance = await dcnt.balanceOf(dnctAirdrop.address);
 
         expect(claimant1Balance).to.equal(airdropClaimants[0].claim);
-        expect(airdropBalance).to.equal(totalClaimable - airdropClaimants[0].claim);
+        expect(airdropBalance).to.equal(totalClaimable.sub(airdropClaimants[0].claim));
       });
 
       it("Should revert with AlreadyClaimed() if already claimed", async function () {
@@ -111,7 +103,7 @@ describe("DCNTAirdrop", function () {
         expect(_reclaim).to.be.revertedWith('AlreadyClaimed()');
 
         let airdropBalance = await dcnt.balanceOf(dnctAirdrop.address);
-        expect(airdropBalance).to.equal(totalClaimable - airdropClaimants[0].claim);
+        expect(airdropBalance).to.equal(totalClaimable.sub(airdropClaimants[0].claim));
       });
     });
 
@@ -120,7 +112,10 @@ describe("DCNTAirdrop", function () {
         let _leaf1 = leaves[0];
         const proof = tree.getHexProof(_leaf1);
 
-        let attemptToClaim = dnctAirdrop.claim(claimant1.address, BigNumber.from(airdropClaimants[0].claim + 1), proof);
+        let attemptToClaim = dnctAirdrop.claim(
+          claimant1.address, BigNumber.from(airdropClaimants[0].claim.add(1)), proof
+        )
+
         expect(attemptToClaim).to.be.revertedWith('NotEligible()');
 
         let claimant1Balance = await dcnt.balanceOf(claimant1.address);
@@ -131,10 +126,7 @@ describe("DCNTAirdrop", function () {
       });
 
       it("Should revert with NotEligible() due to address not in airdrop", async function () {
-        let _leaf = Buffer.from(
-          ethers.utils.solidityKeccak256(['address', 'uint256'], [claimantN.address, 1]).replace(/^0x/, ""),
-          "hex"
-        )
+        let _leaf = makeLeaf(claimantN.address, BigNumber.from(1));
         const proof = tree.getHexProof(_leaf);
 
         let attemptToClaim = dnctAirdrop.claim(claimant1.address, BigNumber.from(1), proof);
