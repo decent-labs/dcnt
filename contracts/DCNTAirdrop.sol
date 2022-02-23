@@ -14,7 +14,7 @@ contract DCNTAirdrop {
     mapping(address => bool) public claimed;
 
     event AirdropClaimed(address claimant, uint256 amount);
-    event AirdropEnded(uint256 endedAt);
+    event AirdropEnded();
 
     error AlreadyClaimed();
     error NotEligible();
@@ -58,7 +58,7 @@ contract DCNTAirdrop {
         }
 
         dcntToken.transfer(returnAddress, dcntToken.balanceOf(address(this)));
-        emit AirdropEnded(block.timestamp);
+        emit AirdropEnded();
     }
 
     function verify(
