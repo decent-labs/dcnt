@@ -9,8 +9,9 @@ import time from "./time";
 import { makeLeaf, makeLeaves, constructMerkeTree } from "../scripts/airdrop_helpers";
 
 
-// Test airdrop deployment.
-// Test claim: eligible, ineligible paths, after end date, after end has been called
+// Test airdrop deployment. Verify initial state
+// Test claim: eligible, eligible but already claimed, ineligible, after end date, 
+//    after end has been called
 // Test end airdrop, verify it withdraws all available balance
 
 describe("DCNTAirdrop", function () {
@@ -33,6 +34,7 @@ describe("DCNTAirdrop", function () {
     claim: BigNumber;
   }[];
 
+  let airdropEndDate: number;
 
   beforeEach(async function () {
     [deployer, recoveryDest, claimant1, claimant2, claimantN] = await ethers.getSigners();
@@ -55,13 +57,15 @@ describe("DCNTAirdrop", function () {
     leaves = makeLeaves(airdropClaimants);
     tree = constructMerkeTree(leaves);
 
+    airdropEndDate = await time.latest() + time.duration.years(1);
+
     // Deploy airdrop contract
     let DCNTAirdrop = await ethers.getContractFactory("DCNTAirdrop");
     dnctAirdrop = await DCNTAirdrop.deploy(
       dcnt.address,
       tree.getHexRoot(),
       totalClaimable,
-      await time.latest() + time.duration.years(1),
+      airdropEndDate,
       recoveryDest.address,
     );
 
@@ -74,6 +78,20 @@ describe("DCNTAirdrop", function () {
     it("Should have totalClaimable DCNT tokens", async function () {
       let airdropBalance = await dcnt.balanceOf(dnctAirdrop.address);
       expect(airdropBalance).to.equal(totalClaimable);
+    });
+
+    it("Should have correctly set all initial state vars", async function () {
+      let _dcntAddress = await dnctAirdrop.dcntToken();
+      let _totalClaimable = await dnctAirdrop.totalClaimable();
+      let _endDate = await dnctAirdrop.endDate();
+      let _returnAddress = await dnctAirdrop.returnAddress();
+      let _root = await dnctAirdrop.merkleRoot();
+
+      expect(_dcntAddress).to.equal(dcnt.address);
+      expect(_totalClaimable).to.equal(totalClaimable);
+      expect(_endDate).to.equal(airdropEndDate);
+      expect(_returnAddress).to.equal(recoveryDest.address);
+      expect(_root).to.equal(tree.getHexRoot());
     });
   });
 
@@ -104,6 +122,33 @@ describe("DCNTAirdrop", function () {
 
         let airdropBalance = await dcnt.balanceOf(dnctAirdrop.address);
         expect(airdropBalance).to.equal(totalClaimable.sub(airdropClaimants[0].claim));
+      });
+
+      it("Should do eligible transfers after end date as long as endAirdrop has not been called", async function () {
+        let _leaf1 = leaves[0];
+        const proof = tree.getHexProof(_leaf1);
+
+        await time.increase(time.duration.years(10));
+
+        await dnctAirdrop.claim(claimant1.address, BigNumber.from(airdropClaimants[0].claim), proof);
+
+        let claimant1Balance = await dcnt.balanceOf(claimant1.address);
+        let airdropBalance = await dcnt.balanceOf(dnctAirdrop.address);
+
+        expect(claimant1Balance).to.equal(airdropClaimants[0].claim);
+        expect(airdropBalance).to.equal(totalClaimable.sub(airdropClaimants[0].claim));
+      });
+
+      it("Should revert after endAirdrop has been called", async function () {
+        let _leaf1 = leaves[0];
+        const proof = tree.getHexProof(_leaf1);
+
+        await time.increase(time.duration.years(1));
+        await dnctAirdrop.endAirdrop();
+
+        let lateClaim = dnctAirdrop.claim(claimant1.address, BigNumber.from(airdropClaimants[0].claim), proof);
+
+        expect(lateClaim).to.be.reverted;
       });
     });
 
@@ -151,7 +196,6 @@ describe("DCNTAirdrop", function () {
     });
 
     describe("When called after end date", function () {
-
       it("Should transfer all unclaimed airdrops to recovery address", async function () {
         await time.increase(time.duration.years(1));
         await dnctAirdrop.endAirdrop();

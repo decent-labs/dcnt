@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract DCNTAirdrop {
-    bytes32 private immutable merkleRoot;
+    bytes32 public immutable merkleRoot;
     uint256 public immutable totalClaimable;
     IERC20 public immutable dcntToken;
     address public immutable returnAddress;
