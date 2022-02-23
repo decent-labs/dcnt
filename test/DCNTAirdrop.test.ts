@@ -6,7 +6,7 @@ import { MerkleTree } from "merkletreejs";
 
 import { DCNTToken, DCNTAirdrop } from "../typechain";
 import time from "./time";
-import { makeLeaf, makeLeaves, constructMerkeTree } from "../scripts/airdrop_helpers";
+import { makeLeaf, makeLeaves, constructMerkleTree } from "../scripts/airdrop_helpers";
 
 
 // Test airdrop deployment. Verify initial state
@@ -55,7 +55,7 @@ describe("DCNTAirdrop", function () {
 
     // Prepare merkle tree of claimants
     leaves = makeLeaves(airdropClaimants);
-    tree = constructMerkeTree(leaves);
+    tree = constructMerkleTree(leaves);
 
     airdropEndDate = await time.latest() + time.duration.years(1);
 

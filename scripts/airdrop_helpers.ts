@@ -8,7 +8,7 @@ export function makeLeaves(airdropClaimants: { addr: string, claim: BigNumber }[
     return airdropClaimants.map(x => makeLeaf(x.addr, x.claim));
 }
 
-export function constructMerkeTree(leaves: (string | Buffer)[]): MerkleTree {
+export function constructMerkleTree(leaves: (string | Buffer)[]): MerkleTree {
     return new MerkleTree(
         leaves,
         ethers.utils.keccak256,
