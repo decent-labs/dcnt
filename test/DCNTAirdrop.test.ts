@@ -28,7 +28,7 @@ describe("DCNTAirdrop", function () {
   const totalClaimable: BigNumber = BigNumber.from(10_000);
 
   let tree: MerkleTree;
-  let leaves: (string | Buffer)[];
+  let leaves: string[];
   let airdropClaimants: {
     addr: string;
     claim: BigNumber;
