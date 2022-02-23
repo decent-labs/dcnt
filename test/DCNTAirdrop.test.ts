@@ -200,9 +200,13 @@ describe("DCNTAirdrop", function () {
     });
 
     describe("When called after end date", function () {
-      it("Should transfer all unclaimed airdrops to recovery address", async function () {
+      it("Should transfer all unclaimed airdrops to recovery address, and emit AirdropEnded", async function () {
         await time.increase(time.duration.years(1));
-        await dnctAirdrop.endAirdrop();
+        let endAirdrop = dnctAirdrop.endAirdrop();
+
+        expect(endAirdrop).to.emit(dnctAirdrop, "AirdropEnded");
+
+        await endAirdrop;
 
         let revoveryDestBalance = await dcnt.balanceOf(recoveryDest.address);
         expect(revoveryDestBalance).to.equal(totalClaimable);
