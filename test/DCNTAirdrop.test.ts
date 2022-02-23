@@ -97,11 +97,15 @@ describe("DCNTAirdrop", function () {
 
   describe("Airdrop claims", function () {
     describe("Given valid proof", function () {
-      it("Should transfer claimant's DCNT claim from airdrop to them", async function () {
+      it("Should transfer claimant's DCNT claim from airdrop to them, and emit AirdropClaimed", async function () {
         let _leaf1 = leaves[0];
         const proof = tree.getHexProof(_leaf1);
 
-        await dnctAirdrop.claim(claimant1.address, BigNumber.from(airdropClaimants[0].claim), proof);
+        let eligibleClaim = dnctAirdrop.claim(claimant1.address, BigNumber.from(airdropClaimants[0].claim), proof);
+
+        expect(eligibleClaim).to.emit(dnctAirdrop, "AirdropClaimed");
+
+        await eligibleClaim;
 
         let claimant1Balance = await dcnt.balanceOf(claimant1.address);
         let airdropBalance = await dcnt.balanceOf(dnctAirdrop.address);
