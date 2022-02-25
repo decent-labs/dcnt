@@ -4,9 +4,7 @@ pragma solidity ^0.8.11;
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-/**
- * @notice Controller for the DCNT token airdrop 💰
- */
+/// @notice Controller for the DCNT token airdrop 💰
 contract DCNTAirdrop {
     bytes32 public immutable merkleRoot;
     uint256 public immutable totalClaimable;
@@ -23,20 +21,18 @@ contract DCNTAirdrop {
     error NotEligible();
     error AirdropStillActive();
 
-    /**
-     * @param _dcntToken token address
-     * @param _merkleRoot The root of a merkle tree constructed from
-     *  a dataset containing eligible addresses and their claims.
-     *   See
-            - https://github.com/miguelmota/merkletreejs for generating tree in JS
-            - https://github.com/miguelmota/merkletreejs-solidity#example for example usage
-     * @param _endDate timestamp before which claimants may continue to claim airdrop
-     * @param _returnAddress unclaimed tokens will be sent to this address after endAirdrop is called
-     *
-     * @dev The 'leaves' param in (https://github.com/miguelmota/merkletreejs) should be a list of
-     *  keccak256 hashes of "abi.encodePacked(claimantAddress, claim)"s for this contract's verification
-     *  to work. Pair sorting should be enabled.
-     */
+    /// @param _dcntToken token address
+    /// @param _merkleRoot The root of a merkle tree constructed from
+    ///  a dataset containing eligible addresses and their claims.
+    ///   See
+    ///       - https://github.com/miguelmota/merkletreejs for generating tree in JS
+    ///       - https://github.com/miguelmota/merkletreejs-solidity#example for example usage
+    /// @param _endDate timestamp before which claimants may continue to claim airdrop
+    /// @param _returnAddress unclaimed tokens will be sent to this address after endAirdrop is called
+    ///
+    /// @dev The 'leaves' param in (https://github.com/miguelmota/merkletreejs) should be a list of
+    ///  keccak256 hashes of "abi.encodePacked(claimantAddress, claim)"s for this contract's verification
+    ///  to work. Pair sorting should be enabled.
     constructor(
         IERC20 _dcntToken,
         bytes32 _merkleRoot,
@@ -51,12 +47,10 @@ contract DCNTAirdrop {
         endDate = _endDate;
     }
 
-    /**
-     * @notice Claim an airdrop if claimant is eligigle
-     * @param _claimant the account making the claim, to which airdrop will be sent
-     * @param _amount to claim; must necessarily be equal to the amount allocated to _claimant
-     * @param _proof Merkle Proof to validate claim
-     */
+    /// @notice Claim an airdrop if claimant is eligigle
+    /// @param _claimant the account making the claim, to which airdrop will be sent
+    /// @param _amount to claim; must necessarily be equal to the amount allocated to _claimant
+    /// @param _proof Merkle Proof to validate claim
     function claim(
         address _claimant,
         uint256 _amount,
@@ -75,9 +69,7 @@ contract DCNTAirdrop {
         emit AirdropClaimed(_claimant, _amount);
     }
 
-    /**
-     * @notice Transfer unclaimed tokens to pre-designated address. Emits AirdropEnded()
-     */
+    /// @notice Transfer unclaimed tokens to pre-designated address. Emits AirdropEnded()
     function endAirdrop() public {
         if (block.timestamp < endDate) {
             revert AirdropStillActive();
@@ -87,12 +79,10 @@ contract DCNTAirdrop {
         emit AirdropEnded();
     }
 
-    /**
-     * @notice Verify an airdrop claim. Does not transfer tokens.
-     * @param _claimant the account making the claim, to which airdrop will be sent
-     * @param _amount to claim; must necessarily be equal to the amount allocated to _claimant
-     * @param _proof Merkle Proof to validate claim
-     */
+    /// @notice Verify an airdrop claim. Does not transfer tokens.
+    /// @param _claimant the account making the claim, to which airdrop will be sent
+    /// @param _amount to claim; must necessarily be equal to the amount allocated to _claimant
+    /// @param _proof Merkle Proof to validate claim
     function verify(
         address _claimant,
         uint256 _amount,
