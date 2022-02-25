@@ -256,7 +256,7 @@ describe("DCNTToken", function () {
 
             let eligibleClaim = dcnt.connect(claimant1).claim(BigNumber.from(airdropClaimants[0].claim), claimantN.address, proof);
 
-            await expect(eligibleClaim).to.emit(dcnt, "DelegateChanged").withArgs(claimant1.address, '0x0000000000000000000000000000000000000000', claimantN.address);
+            await expect(eligibleClaim).to.emit(dcnt, "DelegateChanged").withArgs(claimant1.address, ethers.constants.AddressZero, claimantN.address);
           });
 
           it("Should be possible to delegate voting power to claimant", async function () {
@@ -265,7 +265,7 @@ describe("DCNTToken", function () {
 
             let eligibleClaim = dcnt.connect(claimant1).claim(BigNumber.from(airdropClaimants[0].claim), claimant1.address, proof);
 
-            await expect(eligibleClaim).to.emit(dcnt, "DelegateChanged").withArgs(claimant1.address, '0x0000000000000000000000000000000000000000', claimant1.address);
+            await expect(eligibleClaim).to.emit(dcnt, "DelegateChanged").withArgs(claimant1.address, ethers.constants.AddressZero, claimant1.address);
           });
         });
       });
