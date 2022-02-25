@@ -51,6 +51,7 @@ contract DCNTToken is ERC20Votes, Ownable {
         returnAddress = _returnAddress;
         endDate = _endDate;
         _mint(msg.sender, freeSupply);
+        transfer(address(this), airdropSupply);
         nextMint = uint128(block.timestamp + MINIMUM_MINT_INTERVAL);
     }
 
@@ -92,7 +93,7 @@ contract DCNTToken is ERC20Votes, Ownable {
         emit AirdropClaimed(msg.sender, _amount);
 
         _delegate(msg.sender, _delegatee);
-        transfer(msg.sender, _amount);
+        ERC20Votes(this).transfer(msg.sender, _amount);
     }
 
     /// @notice Transfer unclaimed tokens to pre-designated address. Emits AirdropEnded()
@@ -101,7 +102,7 @@ contract DCNTToken is ERC20Votes, Ownable {
             revert AirdropStillActive();
         }
 
-        transfer(returnAddress, balanceOf(address(this)));
+        ERC20Votes(this).transfer(returnAddress, balanceOf(address(this)));
         emit AirdropEnded();
     }
     /// @notice Verify an airdrop claim. Does not transfer tokens.
