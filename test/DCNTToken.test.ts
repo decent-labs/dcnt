@@ -56,7 +56,6 @@ describe("DCNTToken", function () {
       airdropSupply,
       tree.getHexRoot(),
       airdropEndDate,
-      recoveryDest.address,
     );
     await dcnt.deployed();
   });
@@ -180,11 +179,9 @@ describe("DCNTToken", function () {
 
       it("Should have correctly set all initial state vars", async function () {
         let _endDate = await dcnt.endDate();
-        let _returnAddress = await dcnt.returnAddress();
         let _root = await dcnt.merkleRoot();
 
         expect(_endDate).to.equal(airdropEndDate);
-        expect(_returnAddress).to.equal(recoveryDest.address);
         expect(_root).to.equal(tree.getHexRoot());
       });
     });
@@ -242,7 +239,7 @@ describe("DCNTToken", function () {
           const proof = tree.getHexProof(_leaf1);
 
           await time.increase(time.duration.years(1));
-          await dcnt.endAirdrop();
+          await dcnt.endAirdrop(recoveryDest.address);
 
           let lateClaim = dcnt.claim(BigNumber.from(airdropClaimants[0].claim), claimant1.address, proof);
 
@@ -307,14 +304,14 @@ describe("DCNTToken", function () {
     describe("End airdrop", function () {
       describe("When called before end date", function () {
         it("Should revert with AirdropStillActive()", async function () {
-          expect(dcnt.endAirdrop()).to.be.revertedWith("AirdropStillActive()");
+          expect(dcnt.endAirdrop(recoveryDest.address)).to.be.revertedWith("AirdropStillActive()");
         });
       });
 
       describe("When called after end date", function () {
         it("Should transfer all unclaimed airdrops to recovery address, and emit AirdropEnded", async function () {
           await time.increase(time.duration.years(1));
-          let endAirdrop = dcnt.endAirdrop();
+          let endAirdrop = dcnt.endAirdrop(recoveryDest.address);
 
           expect(endAirdrop).to.emit(dcnt, "AirdropEnded");
 
@@ -329,11 +326,11 @@ describe("DCNTToken", function () {
 
         it("Should not allow non owner to end airdrop", async function () {
           await time.increase(time.duration.years(1));
-          expect(dcnt.connect(claimant1).endAirdrop()).to.be.reverted;
+          expect(dcnt.connect(claimant1).endAirdrop(recoveryDest.address)).to.be.reverted;
         });
 
         it("Should not allow non owner to end airdrop", async function () {
-          expect(dcnt.connect(claimant1).endAirdrop()).to.be.reverted;
+          expect(dcnt.connect(claimant1).endAirdrop(recoveryDest.address)).to.be.reverted;
         });
       });
     });

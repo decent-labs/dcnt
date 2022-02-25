@@ -12,7 +12,6 @@ contract DCNTToken is ERC20Votes, Ownable {
     uint8 public constant MINT_CAP_BPS = 200; // 2%
 
     bytes32 public immutable merkleRoot;
-    address public immutable returnAddress;
     uint64 public immutable endDate;
 
     mapping(address => bool) public claimed;
@@ -35,7 +34,6 @@ contract DCNTToken is ERC20Votes, Ownable {
     ///       - https://github.com/miguelmota/merkletreejs for generating tree in JS
     ///       - https://github.com/miguelmota/merkletreejs-solidity#example for example usage
     /// @param _endDate timestamp before which claimants may continue to claim airdrop
-    /// @param _returnAddress unclaimed tokens will be sent to this address after endAirdrop is called
     ///
     /// @dev The 'leaves' param in (https://github.com/miguelmota/merkletreejs) should be a list of
     ///  keccak256 hashes of "abi.encodePacked(claimantAddress, claim)"s for this contract's verification
@@ -44,8 +42,7 @@ contract DCNTToken is ERC20Votes, Ownable {
         uint256 _freeSupply,
         uint256 _airdropSupply,
         bytes32 _merkleRoot,
-        uint64 _endDate,
-        address _returnAddress
+        uint64 _endDate
     ) ERC20("Decent", "DCNT") ERC20Permit("Decent") {
         merkleRoot = _merkleRoot;
         returnAddress = _returnAddress;
@@ -97,14 +94,16 @@ contract DCNTToken is ERC20Votes, Ownable {
     }
 
     /// @notice Transfer unclaimed tokens to pre-designated address. Emits AirdropEnded()
-    function endAirdrop() public onlyOwner {
+    /// @param _returnAddress unclaimed tokens will be sent to this address after endAirdrop is called
+    function endAirdrop(address _returnAddress) public onlyOwner {
         if (block.timestamp < endDate) {
             revert AirdropStillActive();
         }
 
-        ERC20Votes(this).transfer(returnAddress, balanceOf(address(this)));
+        ERC20Votes(this).transfer(_returnAddress, balanceOf(address(this)));
         emit AirdropEnded();
     }
+
     /// @notice Verify an airdrop claim. Does not transfer tokens.
     /// @param _claimant the account making the claim, to which airdrop will be sent
     /// @param _amount to claim; must necessarily be equal to the amount allocated to _claimant
