@@ -248,6 +248,26 @@ describe("DCNTToken", function () {
 
           expect(lateClaim).to.be.reverted;
         });
+
+        describe("Delegation at claim", function () {
+          it("Should delegate voting power to provided address", async function () {
+            let _leaf1 = leaves[0];
+            const proof = tree.getHexProof(_leaf1);
+
+            let eligibleClaim = dcnt.connect(claimant1).claim(BigNumber.from(airdropClaimants[0].claim), claimantN.address, proof);
+
+            await expect(eligibleClaim).to.emit(dcnt, "DelegateChanged").withArgs(claimant1.address, '0x0000000000000000000000000000000000000000', claimantN.address);
+          });
+
+          it("Should be possible to delegate voting power to claimant", async function () {
+            let _leaf1 = leaves[0];
+            const proof = tree.getHexProof(_leaf1);
+
+            let eligibleClaim = dcnt.connect(claimant1).claim(BigNumber.from(airdropClaimants[0].claim), claimant1.address, proof);
+
+            await expect(eligibleClaim).to.emit(dcnt, "DelegateChanged").withArgs(claimant1.address, '0x0000000000000000000000000000000000000000', claimant1.address);
+          });
+        });
       });
 
       describe("Given invalid proof", function () {
