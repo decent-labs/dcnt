@@ -27,8 +27,8 @@ contract DCNTToken is ERC20Votes, Ownable {
     error MintExceedsMaximum();
     error MintTooSoon();
 
-    /// @param freeSupply amount of tokens to mint at Token Generation Event
-    /// @param airdropSupply amount of tokens to allocated for airdrop
+    /// @param _freeSupply amount of tokens to mint at Token Generation Event
+    /// @param _airdropSupply amount of tokens to allocated for airdrop
     /// @param _merkleRoot The root of a merkle tree constructed from
     ///  a dataset containing eligible addresses and their claims.
     ///   See
@@ -41,8 +41,8 @@ contract DCNTToken is ERC20Votes, Ownable {
     ///  keccak256 hashes of "abi.encodePacked(claimantAddress, claim)"s for this contract's verification
     ///  to work. Pair sorting should be enabled.
     constructor(
-        uint256 freeSupply,
-        uint256 airdropSupply,
+        uint256 _freeSupply,
+        uint256 _airdropSupply,
         bytes32 _merkleRoot,
         uint64 _endDate,
         address _returnAddress
@@ -50,8 +50,8 @@ contract DCNTToken is ERC20Votes, Ownable {
         merkleRoot = _merkleRoot;
         returnAddress = _returnAddress;
         endDate = _endDate;
-        _mint(msg.sender, freeSupply);
-        transfer(address(this), airdropSupply);
+        _mint(msg.sender, _freeSupply);
+        transfer(address(this), _airdropSupply);
         nextMint = uint128(block.timestamp + MINIMUM_MINT_INTERVAL);
     }
 
