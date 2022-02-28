@@ -45,7 +45,6 @@ contract DCNTToken is ERC20Votes, Ownable {
         uint64 _endDate
     ) ERC20("Decent", "DCNT") ERC20Permit("Decent") {
         merkleRoot = _merkleRoot;
-        returnAddress = _returnAddress;
         endDate = _endDate;
         _mint(msg.sender, _freeSupply);
         transfer(address(this), _airdropSupply);
