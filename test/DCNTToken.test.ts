@@ -6,7 +6,11 @@ import { DCNTToken } from "../typechain";
 import { MerkleTree } from "merkletreejs";
 
 import time from "./time";
-import { makeLeaf, makeLeaves, constructMerkleTree } from "../scripts/airdrop_helpers";
+import {
+  makeLeaf,
+  makeLeaves,
+  constructMerkleTree,
+} from "../scripts/airdrop_helpers";
 
 describe("DCNTToken", function () {
   let owner: SignerWithAddress,
@@ -30,10 +34,9 @@ describe("DCNTToken", function () {
 
   let airdropEndDate: number;
 
-
-
   beforeEach(async function () {
-    [owner, nonOwner, recoveryDest, claimant1, claimant2, claimantN] = await ethers.getSigners();
+    [owner, nonOwner, recoveryDest, claimant1, claimant2, claimantN] =
+      await ethers.getSigners();
 
     airdropClaimants = [
       { addr: claimant1.address, claim: BigNumber.from(1000) },
@@ -44,18 +47,18 @@ describe("DCNTToken", function () {
     leaves = makeLeaves(airdropClaimants);
     tree = constructMerkleTree(leaves);
 
-    airdropEndDate = await time.latest() + time.duration.years(1);
+    airdropEndDate = (await time.latest()) + time.duration.years(1);
 
     freeMintWhole = 1_000_000_000;
     freeMintTotal = ethers.utils.parseEther(freeMintWhole.toString());
 
     // Deploy token contract
-    let _DCNTToken = await ethers.getContractFactory("DCNTToken");
+    const _DCNTToken = await ethers.getContractFactory("DCNTToken");
     dcnt = await _DCNTToken.deploy(
       freeMintTotal,
       airdropSupply,
       tree.getHexRoot(),
-      airdropEndDate,
+      airdropEndDate
     );
     await dcnt.deployed();
   });
@@ -106,7 +109,9 @@ describe("DCNTToken", function () {
 
         it("Should allow owner to mint 1 wei", async function () {
           await dcnt.mint(owner.address, oneWei);
-          expect(await dcnt.totalSupply()).to.eq(originalTotalSupply.add(oneWei));
+          expect(await dcnt.totalSupply()).to.eq(
+            originalTotalSupply.add(oneWei)
+          );
         });
 
         it("Should not allow non-owner to mint 1 wei", async function () {
@@ -164,7 +169,9 @@ describe("DCNTToken", function () {
           await time.increase(minimumMintInterval);
           const toMint = 1;
           await dcnt.mint(owner.address, toMint);
-          expect(await dcnt.totalSupply()).to.eq(originalTotalSupply.add(toMint));
+          expect(await dcnt.totalSupply()).to.eq(
+            originalTotalSupply.add(toMint)
+          );
         });
       });
     });
@@ -173,13 +180,13 @@ describe("DCNTToken", function () {
   describe("Airdrop features", function () {
     describe("Initial deployment state", function () {
       it("Should have totalClaimable DCNT tokens allocated for airdrop", async function () {
-        let airdropBalance = await dcnt.balanceOf(dcnt.address);
+        const airdropBalance = await dcnt.balanceOf(dcnt.address);
         expect(airdropBalance).to.equal(airdropSupply);
       });
 
       it("Should have correctly set all initial state vars", async function () {
-        let _endDate = await dcnt.endDate();
-        let _root = await dcnt.merkleRoot();
+        const _endDate = await dcnt.endDate();
+        const _root = await dcnt.merkleRoot();
 
         expect(_endDate).to.equal(airdropEndDate);
         expect(_root).to.equal(tree.getHexRoot());
@@ -189,111 +196,176 @@ describe("DCNTToken", function () {
     describe("Airdrop claims", function () {
       describe("Given valid proof", function () {
         it("Should transfer claimant's DCNT claim from airdrop to them, and emit AirdropClaimed", async function () {
-          let _leaf1 = leaves[0];
+          const _leaf1 = leaves[0];
           const proof = tree.getHexProof(_leaf1);
 
-          let eligibleClaim = dcnt.connect(claimant1).claim(BigNumber.from(airdropClaimants[0].claim), claimant1.address, proof);
+          const eligibleClaim = dcnt
+            .connect(claimant1)
+            .claim(
+              BigNumber.from(airdropClaimants[0].claim),
+              claimant1.address,
+              proof
+            );
 
           expect(eligibleClaim).to.emit(dcnt, "AirdropClaimed");
 
           await eligibleClaim;
 
-          let claimant1Balance = await dcnt.balanceOf(claimant1.address);
-          let airdropBalance = await dcnt.balanceOf(dcnt.address);
+          const claimant1Balance = await dcnt.balanceOf(claimant1.address);
+          const airdropBalance = await dcnt.balanceOf(dcnt.address);
 
           expect(claimant1Balance).to.equal(airdropClaimants[0].claim);
-          expect(airdropBalance).to.equal(airdropSupply.sub(airdropClaimants[0].claim));
+          expect(airdropBalance).to.equal(
+            airdropSupply.sub(airdropClaimants[0].claim)
+          );
         });
 
         it("Should revert with AlreadyClaimed() if already claimed", async function () {
-          let _leaf1 = leaves[0];
+          const _leaf1 = leaves[0];
           const proof = tree.getHexProof(_leaf1);
 
-          let _ = await dcnt.connect(claimant1).claim(BigNumber.from(airdropClaimants[0].claim), claimant1.address, proof);
+          const _ = await dcnt
+            .connect(claimant1)
+            .claim(
+              BigNumber.from(airdropClaimants[0].claim),
+              claimant1.address,
+              proof
+            );
           await _.wait();
 
-          let _reclaim = dcnt.connect(claimant1).claim(BigNumber.from(airdropClaimants[0].claim), claimant1.address, proof);
-          expect(_reclaim).to.be.revertedWith('AlreadyClaimed()');
+          const _reclaim = dcnt
+            .connect(claimant1)
+            .claim(
+              BigNumber.from(airdropClaimants[0].claim),
+              claimant1.address,
+              proof
+            );
+          expect(_reclaim).to.be.revertedWith("AlreadyClaimed()");
 
-          let airdropBalance = await dcnt.balanceOf(dcnt.address);
-          expect(airdropBalance).to.equal(airdropSupply.sub(airdropClaimants[0].claim));
+          const airdropBalance = await dcnt.balanceOf(dcnt.address);
+          expect(airdropBalance).to.equal(
+            airdropSupply.sub(airdropClaimants[0].claim)
+          );
         });
 
         it("Should allow eligible transfers after end date as long as endAirdrop has not been called", async function () {
-          let _leaf1 = leaves[0];
+          const _leaf1 = leaves[0];
           const proof = tree.getHexProof(_leaf1);
 
           await time.increase(time.duration.years(10));
 
-          await dcnt.connect(claimant1).claim(BigNumber.from(airdropClaimants[0].claim), claimant1.address, proof);
+          await dcnt
+            .connect(claimant1)
+            .claim(
+              BigNumber.from(airdropClaimants[0].claim),
+              claimant1.address,
+              proof
+            );
 
-          let claimant1Balance = await dcnt.balanceOf(claimant1.address);
-          let airdropBalance = await dcnt.balanceOf(dcnt.address);
+          const claimant1Balance = await dcnt.balanceOf(claimant1.address);
+          const airdropBalance = await dcnt.balanceOf(dcnt.address);
 
           expect(claimant1Balance).to.equal(airdropClaimants[0].claim);
-          expect(airdropBalance).to.equal(airdropSupply.sub(airdropClaimants[0].claim));
+          expect(airdropBalance).to.equal(
+            airdropSupply.sub(airdropClaimants[0].claim)
+          );
         });
 
         it("Should revert after endAirdrop has been called", async function () {
-          let _leaf1 = leaves[0];
+          const _leaf1 = leaves[0];
           const proof = tree.getHexProof(_leaf1);
 
           await time.increase(time.duration.years(1));
           await dcnt.endAirdrop(recoveryDest.address);
 
-          let lateClaim = dcnt.claim(BigNumber.from(airdropClaimants[0].claim), claimant1.address, proof);
+          const lateClaim = dcnt.claim(
+            BigNumber.from(airdropClaimants[0].claim),
+            claimant1.address,
+            proof
+          );
 
+          /* eslint-disable-next-line no-unused-expressions */
           expect(lateClaim).to.be.reverted;
         });
 
         describe("Delegation at claim", function () {
           it("Should delegate voting power to provided address", async function () {
-            let _leaf1 = leaves[0];
+            const _leaf1 = leaves[0];
             const proof = tree.getHexProof(_leaf1);
 
-            let eligibleClaim = dcnt.connect(claimant1).claim(BigNumber.from(airdropClaimants[0].claim), claimantN.address, proof);
+            const eligibleClaim = dcnt
+              .connect(claimant1)
+              .claim(
+                BigNumber.from(airdropClaimants[0].claim),
+                claimantN.address,
+                proof
+              );
 
-            await expect(eligibleClaim).to.emit(dcnt, "DelegateChanged").withArgs(claimant1.address, ethers.constants.AddressZero, claimantN.address);
+            await expect(eligibleClaim)
+              .to.emit(dcnt, "DelegateChanged")
+              .withArgs(
+                claimant1.address,
+                ethers.constants.AddressZero,
+                claimantN.address
+              );
           });
 
           it("Should be possible to delegate voting power to claimant", async function () {
-            let _leaf1 = leaves[0];
+            const _leaf1 = leaves[0];
             const proof = tree.getHexProof(_leaf1);
 
-            let eligibleClaim = dcnt.connect(claimant1).claim(BigNumber.from(airdropClaimants[0].claim), claimant1.address, proof);
+            const eligibleClaim = dcnt
+              .connect(claimant1)
+              .claim(
+                BigNumber.from(airdropClaimants[0].claim),
+                claimant1.address,
+                proof
+              );
 
-            await expect(eligibleClaim).to.emit(dcnt, "DelegateChanged").withArgs(claimant1.address, ethers.constants.AddressZero, claimant1.address);
+            await expect(eligibleClaim)
+              .to.emit(dcnt, "DelegateChanged")
+              .withArgs(
+                claimant1.address,
+                ethers.constants.AddressZero,
+                claimant1.address
+              );
           });
         });
       });
 
       describe("Given invalid proof", function () {
         it("Should revert with NotEligible() due to mismatching claim", async function () {
-          let _leaf1 = leaves[0];
+          const _leaf1 = leaves[0];
           const proof = tree.getHexProof(_leaf1);
 
-          let attemptToClaim = dcnt.connect(claimant1).claim(
-            BigNumber.from(airdropClaimants[0].claim.add(1)), claimant1.address, proof
-          )
+          const attemptToClaim = dcnt
+            .connect(claimant1)
+            .claim(
+              BigNumber.from(airdropClaimants[0].claim.add(1)),
+              claimant1.address,
+              proof
+            );
 
-          expect(attemptToClaim).to.be.revertedWith('NotEligible()');
+          expect(attemptToClaim).to.be.revertedWith("NotEligible()");
 
-          let claimant1Balance = await dcnt.balanceOf(claimant1.address);
-          let airdropBalance = await dcnt.balanceOf(dcnt.address);
+          const claimant1Balance = await dcnt.balanceOf(claimant1.address);
+          const airdropBalance = await dcnt.balanceOf(dcnt.address);
 
           expect(claimant1Balance).to.equal(0);
           expect(airdropBalance).to.equal(airdropSupply);
         });
 
         it("Should revert with NotEligible() due to address not in airdrop", async function () {
-          let _leaf = makeLeaf(claimantN.address, BigNumber.from(1));
+          const _leaf = makeLeaf(claimantN.address, BigNumber.from(1));
           const proof = tree.getHexProof(_leaf);
 
-          let attemptToClaim = dcnt.connect(claimant1).claim(BigNumber.from(1), claimant1.address, proof);
-          expect(attemptToClaim).to.be.revertedWith('NotEligible()');
+          const attemptToClaim = dcnt
+            .connect(claimant1)
+            .claim(BigNumber.from(1), claimant1.address, proof);
+          expect(attemptToClaim).to.be.revertedWith("NotEligible()");
 
-          let claimantBalance = await dcnt.balanceOf(claimantN.address);
-          let airdropBalance = await dcnt.balanceOf(dcnt.address);
+          const claimantBalance = await dcnt.balanceOf(claimantN.address);
+          const airdropBalance = await dcnt.balanceOf(dcnt.address);
 
           expect(claimantBalance).to.equal(0);
           expect(airdropBalance).to.equal(airdropSupply);
@@ -304,33 +376,42 @@ describe("DCNTToken", function () {
     describe("End airdrop", function () {
       describe("When called before end date", function () {
         it("Should revert with AirdropStillActive()", async function () {
-          expect(dcnt.endAirdrop(recoveryDest.address)).to.be.revertedWith("AirdropStillActive()");
+          expect(dcnt.endAirdrop(recoveryDest.address)).to.be.revertedWith(
+            "AirdropStillActive()"
+          );
         });
       });
 
       describe("When called after end date", function () {
         it("Should transfer all unclaimed airdrops to recovery address, and emit AirdropEnded", async function () {
           await time.increase(time.duration.years(1));
-          let endAirdrop = dcnt.endAirdrop(recoveryDest.address);
+          const endAirdrop = dcnt.endAirdrop(recoveryDest.address);
 
           expect(endAirdrop).to.emit(dcnt, "AirdropEnded");
 
           await endAirdrop;
 
-          let revoveryDestBalance = await dcnt.balanceOf(recoveryDest.address);
+          const revoveryDestBalance = await dcnt.balanceOf(
+            recoveryDest.address
+          );
           expect(revoveryDestBalance).to.equal(airdropSupply);
 
-          let airdropBalance = await dcnt.balanceOf(dcnt.address);
+          const airdropBalance = await dcnt.balanceOf(dcnt.address);
           expect(airdropBalance).to.equal(0);
         });
 
         it("Should not allow non owner to end airdrop", async function () {
           await time.increase(time.duration.years(1));
-          expect(dcnt.connect(claimant1).endAirdrop(recoveryDest.address)).to.be.reverted;
+
+          /* eslint-disable-next-line no-unused-expressions */
+          expect(dcnt.connect(claimant1).endAirdrop(recoveryDest.address)).to.be
+            .reverted;
         });
 
         it("Should not allow non owner to end airdrop", async function () {
-          expect(dcnt.connect(claimant1).endAirdrop(recoveryDest.address)).to.be.reverted;
+          /* eslint-disable-next-line no-unused-expressions */
+          expect(dcnt.connect(claimant1).endAirdrop(recoveryDest.address)).to.be
+            .reverted;
         });
       });
     });
