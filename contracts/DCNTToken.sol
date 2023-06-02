@@ -36,4 +36,9 @@ contract DCNTToken is ERC20Votes, Ownable {
         nextMint = uint128(block.timestamp + MINIMUM_MINT_INTERVAL);
         _mint(dest, amount);
     }
+
+    /// @dev holders can burn their own tokens
+    function burn(uint256 amount) external {
+        _burn(msg.sender, amount);
+    }
 }
